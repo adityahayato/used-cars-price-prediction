@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 models/*.pkl
-data/*.csv
+data/*.zip
+data/kaggle_extract/
 outputs/*.png
 *.log

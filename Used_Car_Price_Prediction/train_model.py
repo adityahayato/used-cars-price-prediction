@@ -28,6 +28,7 @@ warnings.filterwarnings("ignore")
 ROOT = Path(__file__).resolve().parent
 DATA_PATH = ROOT / "data" / "car_data.csv"
 OUTPUT_DIR = ROOT / "outputs"
+EDA_DIR = OUTPUT_DIR / "eda"
 MODEL_PATH = ROOT / "models" / "best_model.pkl"
 
 ALIASES = {
@@ -71,13 +72,13 @@ def load_and_prepare(path=DATA_PATH):
     frame = frame.rename(columns={source: key for key, source in mapping.items() if source})
     selected = [key for key in ALIASES if key in frame.columns]
     frame = frame[selected].drop_duplicates().copy()
-    for column in ["year", "selling_price", "present_price", "km_driven", "owner"]:
+    for column in ["year", "selling_price", "present_price", "km_driven"]:
         if column in frame:
             frame[column] = pd.to_numeric(frame[column], errors="coerce")
     if "selling_price" not in frame:
         raise ValueError("The dataset must contain selling_price after column adaptation.")
     frame = frame[frame["selling_price"] > 0]
-    for column in ["year", "km_driven", "owner", "present_price"]:
+    for column in ["year", "km_driven", "present_price"]:
         if column in frame:
             frame = frame[(frame[column].isna()) | (frame[column] >= 0)]
     frame = frame.dropna(subset=["selling_price"])
@@ -87,11 +88,11 @@ def load_and_prepare(path=DATA_PATH):
 
 
 def make_eda(frame):
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    EDA_DIR.mkdir(parents=True, exist_ok=True)
     sns.set_theme(style="whitegrid")
     plots = []
     plt.figure(figsize=(8, 5)); sns.histplot(frame["selling_price"], kde=True, color="#21c7a8"); plt.title("Selling Price Distribution"); plots.append("price_distribution.png")
-    plt.figure(figsize=(8, 5)); sns.countplot(data=frame, x="year", color="#3686ff"); plt.xticks(rotation=45); plt.title("Cars by Manufacturing Year"); plots.append("manufacturing_year.png")
+    plt.figure(figsize=(8, 5)); sns.scatterplot(data=frame, x="year", y="selling_price", alpha=.65, color="#3686ff"); plt.title("Manufacturing Year vs Selling Price"); plots.append("manufacturing_year_vs_price.png")
     if "fuel_type" in frame:
         plt.figure(figsize=(7, 5)); sns.countplot(data=frame, x="fuel_type", color="#21c7a8"); plt.title("Fuel Type Distribution"); plots.append("fuel_type_distribution.png")
     if "transmission" in frame:
@@ -102,7 +103,7 @@ def make_eda(frame):
     if numeric.shape[1] > 1:
         plt.figure(figsize=(9, 6)); sns.heatmap(numeric.corr(), annot=True, cmap="crest", fmt=".2f"); plt.title("Numerical Correlation Heatmap"); plots.append("correlation_heatmap.png")
     for filename in plots:
-        plt.tight_layout(); plt.savefig(OUTPUT_DIR / filename, dpi=130); plt.close()
+        plt.tight_layout(); plt.savefig(EDA_DIR / filename, dpi=130); plt.close()
 
 
 def train(path=DATA_PATH):
@@ -127,12 +128,15 @@ def train(path=DATA_PATH):
         pipeline = Pipeline([("preprocessor", preprocessor), ("model", estimator)])
         pipeline.fit(X_train, y_train)
         prediction = pipeline.predict(X_test)
-        rows.append({"model": name, "r2_score": r2_score(y_test, prediction), "mae": mean_absolute_error(y_test, prediction), "rmse": mean_squared_error(y_test, prediction, squared=False)})
+        rows.append({"model": name, "r2_score": r2_score(y_test, prediction), "mae": mean_absolute_error(y_test, prediction), "rmse": np.sqrt(mean_squared_error(y_test, prediction))})
         fitted[name] = pipeline
     results = pd.DataFrame(rows).sort_values(["r2_score", "rmse"], ascending=[False, True])
-    OUTPUT_DIR.mkdir(exist_ok=True); results.to_csv(OUTPUT_DIR / "model_comparison.csv", index=False); results.to_csv(OUTPUT_DIR / "evaluation_results.csv", index=False)
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    results.to_csv(OUTPUT_DIR / "model_comparison.csv", index=False)
+    results.to_csv(OUTPUT_DIR / "evaluation_results.csv", index=False)
+    pd.DataFrame([{"feature": column, "role": "numeric" if column in numeric else "categorical", "default": frame[column].dropna().mode().iloc[0] if not frame[column].dropna().empty else ""} for column in X.columns]).to_csv(OUTPUT_DIR / "feature_info.csv", index=False)
     best_name = results.iloc[0]["model"]
-    joblib.dump({"pipeline": fitted[best_name], "features": X.columns.tolist(), "feature_defaults": {column: (frame[column].dropna().mode().iloc[0] if not frame[column].dropna().empty else "") for column in X.columns}, "model_name": best_name, "column_mapping": mapping}, MODEL_PATH)
+    joblib.dump({"pipeline": fitted[best_name], "features": X.columns.tolist(), "numeric_features": numeric, "categorical_features": categorical, "feature_defaults": {column: (frame[column].dropna().mode().iloc[0] if not frame[column].dropna().empty else "") for column in X.columns}, "model_name": best_name, "column_mapping": mapping}, MODEL_PATH)
     print(f"Trained {len(frame):,} rows. Best model: {best_name}")
     print(results.to_string(index=False))
 

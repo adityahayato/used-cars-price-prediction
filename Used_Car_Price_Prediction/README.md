@@ -23,7 +23,7 @@ Python, Flask, Pandas, NumPy, scikit-learn, Joblib, Matplotlib, Seaborn, HTML5, 
 Used_Car_Price_Prediction/
 ├── app.py                 # Flask server and validation
 ├── train_model.py         # data, EDA, training and evaluation
-├── data/car_data.csv      # user-provided genuine dataset (not committed)
+├── data/car_data.csv      # genuine CarDekho dataset
 ├── models/best_model.pkl  # generated after training (not committed)
 ├── outputs/               # generated charts and metrics
 ├── notebooks/eda.ipynb
@@ -35,17 +35,17 @@ Used_Car_Price_Prediction/
 
 ## Dataset setup
 
-Download the preferred genuine dataset from [Kaggle: Vehicle Dataset from CarDekho](https://www.kaggle.com/datasets/nehalbirla/vehicle-dataset-from-cardekho). Copy its CSV into this project's `data` folder and rename it to `car_data.csv`.
+The project uses the genuine `CAR DETAILS FROM CAR DEKHO.csv` file from [Kaggle: Vehicle Dataset from CarDekho](https://www.kaggle.com/datasets/nehalbirla/vehicle-dataset-from-cardekho), copied to `data/car_data.csv`. It contains 4,340 records and the columns `name`, `year`, `selling_price`, `km_driven`, `fuel`, `seller_type`, `transmission`, and `owner`.
 
-The trainer detects common names such as `Car_Name`/`name`, `Year`, `Selling_Price`, `Present_Price`, `Kms_Driven`, `Fuel_Type`, `Seller_Type`, `Transmission` and `Owner`. It does not fabricate records. If the target column is absent, it stops with an actionable error.
+The trainer detects common names such as `Car_Name`/`name`, `Year`, `Selling_Price`, `Present_Price`, `Kms_Driven`, `Fuel_Type`/`fuel`, `Seller_Type`, `Transmission` and `Owner`. It does not fabricate records. If the target column is absent, it stops with an actionable error.
 
 ## Install and train on Windows
 
 1. Install Python 3.10 or newer from python.org and enable “Add Python to PATH”. This project intentionally uses the normal Python installation; do not create a virtual environment.
 2. Open the project folder and double-click `install.bat`, or run `python -m pip install -r requirements.txt`.
-3. Place the real dataset at `data\car_data.csv`.
+3. The genuine dataset is already at `data\car_data.csv` in this project. If it is missing in a fresh copy, download it from the Kaggle link above.
 4. Run `python train_model.py`.
-5. Check `outputs\model_comparison.csv`, `outputs\evaluation_results.csv` and the PNG charts. The best pipeline is saved to `models\best_model.pkl`.
+5. Check `outputs\model_comparison.csv`, `outputs\evaluation_results.csv` and `outputs\eda\`. The best pipeline is saved to `models\best_model.pkl`.
 
 ## Run the application
 

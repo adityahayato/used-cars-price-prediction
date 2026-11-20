@@ -34,26 +34,27 @@ def predict():
     except FileNotFoundError as error:
         return render_template("prediction.html", error=str(error), form=request.form)
     if request.method == "GET":
-        return render_template("prediction.html", fields=bundle["features"], defaults=bundle.get("feature_defaults", {}))
+        return render_template("prediction.html", fields=bundle["features"], numeric_features=bundle.get("numeric_features", []), defaults=bundle.get("feature_defaults", {}))
     values = {}
+    numeric_features = set(bundle.get("numeric_features", []))
     for feature in bundle["features"]:
         raw = request.form.get(feature, "").strip()
         if raw == "":
-            return render_template("prediction.html", error=f"Please provide a value for {feature.replace('_', ' ')}.", fields=bundle["features"], form=request.form)
-        if feature in {"year", "km_driven", "owner", "present_price"}:
+            return render_template("prediction.html", error=f"Please provide a value for {feature.replace('_', ' ')}.", fields=bundle["features"], numeric_features=numeric_features, form=request.form)
+        if feature in numeric_features:
             try:
                 values[feature] = float(raw)
             except ValueError:
-                return render_template("prediction.html", error=f"{feature.replace('_', ' ').title()} must be a number.", fields=bundle["features"], form=request.form)
+                return render_template("prediction.html", error=f"{feature.replace('_', ' ').title()} must be a number.", fields=bundle["features"], numeric_features=numeric_features, form=request.form)
             if values[feature] < 0:
-                return render_template("prediction.html", error=f"{feature.replace('_', ' ').title()} cannot be negative.", fields=bundle["features"], form=request.form)
+                return render_template("prediction.html", error=f"{feature.replace('_', ' ').title()} cannot be negative.", fields=bundle["features"], numeric_features=numeric_features, form=request.form)
         else:
             values[feature] = raw
     try:
         prediction = float(bundle["pipeline"].predict(pd.DataFrame([values], columns=bundle["features"]))[0])
     except Exception:
         app.logger.exception("Prediction failed")
-        return render_template("prediction.html", error="The submitted values could not be processed by the trained model.", fields=bundle["features"], form=request.form)
+        return render_template("prediction.html", error="The submitted values could not be processed by the trained model.", fields=bundle["features"], numeric_features=numeric_features, form=request.form)
     return render_template("result.html", prediction=max(0, prediction), details=values)
 
 

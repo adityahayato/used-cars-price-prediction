@@ -1,0 +1,8 @@
+feature,role,default
+car_name,categorical,Maruti Swift Dzire VDI
+year,numeric,2017
+km_driven,numeric,70000
+fuel_type,categorical,Diesel
+seller_type,categorical,Individual
+transmission,categorical,Manual
+owner,categorical,First Owner
