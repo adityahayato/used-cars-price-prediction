@@ -1,6 +1,6 @@
 # Used Car Price Prediction System
 
-AutoValue is a local Flask application that estimates a used car's resale value in Indian Rupees from its specifications. It is designed as a beginner-friendly internship project with a reproducible data-to-web workflow.
+CarRcheck is a local Flask application that estimates a used car's resale value in Indian Rupees from its specifications. It is designed as a beginner-friendly internship project with a reproducible data-to-web workflow.
 
 ## Features
 

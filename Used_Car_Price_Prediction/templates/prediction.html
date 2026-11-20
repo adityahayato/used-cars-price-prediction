@@ -1,1 +1,44 @@
-{% extends 'base.html' %}{% block title %}Estimate | AutoValue{% endblock %}{% block content %}<section class="page-head compact"><p class="eyebrow">YOUR CAR</p><h1>Build your estimate.</h1><p class="lead">Use the same details represented in the trained dataset. All values are validated before prediction.</p></section>{% if error %}<div class="alert">{{ error }}</div>{% endif %}<form class="form-card" method="post" action="{{ url_for('predict') }}"><div class="form-grid">{% for field in fields|default([]) %}<label>{{ field.replace('_', ' ')|title }}{% if field in numeric_features|default([]) %}<input type="number" name="{{ field }}" min="0" step="any" value="{{ form.get(field, '') if form else defaults.get(field, '') }}" required>{% else %}<input type="text" name="{{ field }}" value="{{ form.get(field, '') if form else defaults.get(field, '') }}" required>{% endif %}</label>{% endfor %}</div>{% if fields %}<button class="button" type="submit">Calculate estimated value <span>→</span></button>{% else %}<p class="hint">After installing dependencies and placing the genuine dataset in <code>data/car_data.csv</code>, run <code>python train_model.py</code>.</p>{% endif %}</form>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Estimate | CarRcheck{% endblock %}
+{% block content %}
+<style>
+  select { display:block; width:100%; margin-top:8px; padding:14px; border:1px solid #d7e3e5; border-radius:7px; font:inherit; background:#fff; color:var(--ink); }
+  select:invalid { color:#6b7b88; }
+  .field-hint { display:block; margin-top:7px; color:var(--muted); font-size:12px; font-weight:400; }
+  .estimate-head { display:flex; align-items:center; justify-content:space-between; gap:40px; }
+  .estimate-head-copy { position:relative; z-index:1; }
+  .prediction-car { width:min(360px,38vw); height:auto; margin-right:4%; filter:drop-shadow(0 16px 18px #12375424); }
+  @media(max-width:700px){ .estimate-head { display:block; } .prediction-car { display:block; width:220px; margin:28px auto 0; } }
+</style>
+<section class="page-head compact"><div class="estimate-head"><div class="estimate-head-copy"><p class="eyebrow">YOUR CAR</p><h1>Build your estimate.</h1><p class="lead">Use the same details represented in the trained dataset. All values are validated before prediction.</p></div><img class="prediction-car" src="{{ url_for('static', filename='images/prediction-car.svg') }}" alt="Cartoon green car illustration"></div></section>
+{% if error %}<div class="alert">{{ error }}</div>{% endif %}
+<form class="form-card" method="post" action="{{ url_for('predict') }}">
+  <div class="form-grid">
+    {% for field in fields|default([]) %}
+      {% set current_value = form.get(field, '') if form else '' %}
+      <label>{{ field.replace('_', ' ')|title }}
+        {% if field in numeric_features|default([]) %}
+          {% if field == 'year' %}<input type="number" name="{{ field }}" min="1950" max="{{ current_year|default(2026) }}" step="1" value="{{ current_value }}" required>
+          {% else %}<input type="number" name="{{ field }}" min="0" step="any" value="{{ current_value }}" required>{% endif %}
+        {% elif field in choice_options %}
+          <select name="{{ field }}" required>
+            <option value="" {% if not current_value %}selected{% endif %} disabled>Select {{ field.replace('_', ' ') }}</option>
+            {% for option in choice_options[field] %}
+              <option value="{{ option }}" {% if current_value == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+          {% if field == 'transmission' %}<small class="field-hint">The gearbox type</small>{% endif %}
+        {% elif field == 'car_name' %}
+          <input type="text" name="{{ field }}" list="car-name-suggestions" value="{{ current_value }}" placeholder="Start typing a car name" required>
+          <datalist id="car-name-suggestions">
+            {% for suggestion in car_name_suggestions %}<option value="{{ suggestion }}">{% endfor %}
+          </datalist>
+        {% else %}
+          <input type="text" name="{{ field }}" value="{{ current_value }}" required>
+        {% endif %}
+      </label>
+    {% endfor %}
+  </div>
+  {% if fields %}<button class="button" type="submit">Calculate estimated value <span>→</span></button>{% else %}<p class="hint">After installing dependencies and placing the genuine dataset in <code>data/car_data.csv</code>, run <code>python train_model.py</code>.</p>{% endif %}
+</form>
+{% endblock %}
